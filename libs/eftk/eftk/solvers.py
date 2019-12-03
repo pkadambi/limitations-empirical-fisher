@@ -23,3 +23,4 @@ def lbfgs(problem):
     theta = np.zeros((problem.D, 1))
     res = sp.optimize.minimize(fun=problem.loss, x0=theta, jac=problem.g)
     return res.x, res.message
+

@@ -13,6 +13,8 @@ def parse():
         ["-misspec", "Misspecification experiment"],
         ["-optim", "Optimization experiment"],
         ["-vecfield", "Vector field visualization"],
+        ["-vecfield_quantized", "Quantized Vector field visualization"],
+        ["-logistic_regression", "Quantized Logistic Regression visualization"],
     ]
 
     add_options_to_group(experiment_choices, parser.add_argument_group('Experiment selection').add_mutually_exclusive_group(required=True))
@@ -47,11 +49,31 @@ def savefigs(figs, expname):
 
 if __name__ == "__main__":
     args = parse()
+    print(args)
+    # exit()
     print("")
 
     if args.vecfield:
         import vecfield.main as exp
         expname = "vecfield"
+    elif args.vecfield_quantized:
+        import vecfield_quantized.quantizer as quantizer
+        # q = quantizer.Quantizer(num_bits=32, q_min=-1, q_max=5)
+        # q = quantizer.Quantizer(num_bits=2, q_min=-1.1659, q_max=4.375)
+        q = quantizer.Quantizer(num_bits=4, q_min=-.5, q_max=4.5)
+        # q = quantizer.Quantizer(num_bits=4, q_min=-1, q_max=4.5)
+
+        # q = quantizer.Quantizer(num_bits=4, q_min=-.66, q_max=3.667)
+        # q = quantizer.Quantizer(num_bits=2, q_min=-.66, q_max=3.667)
+        import vecfield_quantized.main as exp
+        expname = "vecfield_quantized"
+    elif args.logistic_regression:
+        import logistic_regression.quantizer as quantizer
+        # q = quantizer.Quantizer(num_bits=3, q_min=-3, q_max=3)
+        q = quantizer.Quantizer(num_bits=3, q_min=-3, q_max=2.85)
+        import logistic_regression.main as exp
+        expname = "logistic_regression"
+
     if args.misspec:
         import misspec.main as exp
         expname = "misspec"
@@ -63,13 +85,19 @@ if __name__ == "__main__":
         if args.appendix:
             exp.run_appendix()
         else:
-            exp.run()
+            if args.vecfield_quantized or args.logistic_regression:
+                exp.run(q)
+            else:
+                exp.run()
 
     if args.plot:
         if args.appendix:
             figs = exp.plot_appendix()
         else:
-            figs = exp.plot()
+            if args.vecfield_quantized or args.logistic_regression:
+                figs = exp.plot(q)
+            else:
+                figs = exp.plot()
 
         if args.show:
             efplt.plt.show()

@@ -7,13 +7,23 @@ import efplt
 GRID_DENS = 15
 LEVELS = 5
 LABELPAD_DIFF = -20
+
 optNames = ["GD", "NGD", "EF"]
+# label_for = [
+#     r"\bf{Dataset}",
+#     r"\bf{GD}",
+#     r"\bf{NGD}",
+#     r"\bf{EF}"
+# ]
+
+# optNames = ["MSQE", "Full Hessian", "EF"]
 label_for = [
     r"\bf{Dataset}",
-    r"\bf{GD}",
-    r"\bf{NGD}",
+    r"\bf{MSQE}",
+    r"\bf{Full Hessian}",
     r"\bf{EF}"
 ]
+
 DD = 3
 theta_lims = [2 - DD, 2 + DD]
 thetas = list([np.linspace(theta_lims[0], theta_lims[1], GRID_DENS) for _ in range(2)])
@@ -85,8 +95,12 @@ def plot_gradientDescent(ax, xs, optName):
     ax.plot(xs[0, 0], xs[0, 1], 'h', color="k", markersize=8)
     ax.plot(xs[-1, 0], xs[-1, 1], '*', color="k", markersize=12)
 
+def plot_quantization_grid(ax):
 
-def plot(X, y, problem, vecFuncs, startingPoints, results):
+    return 0
+
+
+def plot(X, y, problem, vecFuncs, startingPoints, results, Quantizer):
 
     fig, axes = fig_and_axes()
 
@@ -102,17 +116,37 @@ def plot(X, y, problem, vecFuncs, startingPoints, results):
     axes[0].set_xticks([0, 10])
     axes[0].set_yticks([0, 20])
 
+    q = Quantizer
+
     for ax in axes[1:]:
         ax.set_xlim(theta_lims)
         ax.set_ylim(theta_lims)
-        ax.set_xticks(theta_lims)
-        ax.set_yticks(theta_lims)
+        # ax.set_xticks(theta_lims)
+        # ax.set_yticks(theta_lims)
+
+        #plot quantizer grid
+
         ax.set_xlabel(r"$b$", labelpad=LABELPAD_DIFF)
         ax.set_ylabel(r"$\theta$", labelpad=LABELPAD_DIFF)
 
+
+
+        ax.set_xticks(q.bins)
+        ax.set_yticks(q.bins)
+
+        # empty_string_labels = [''] * len(q.bins)
+        # ax.set_xticklabels(empty_string_labels)
+        # ax.set_yticklabels(empty_string_labels)
+
+        # y_axis = ax.get_yaxis()
+
+
+
+        # efplt.strip_axes(axes)
+
+        ax.grid(which='major', alpha=1., linewidth=2, color='k')
+
     for i, ax in enumerate(axes):
         ax.set_title(label_for[i])
-
-    efplt.strip_axes(axes)
 
     return fig

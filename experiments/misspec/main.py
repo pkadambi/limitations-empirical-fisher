@@ -1,6 +1,6 @@
 import eftk
 import numpy as np
-
+import pdb
 from . import plotter
 
 
@@ -49,6 +49,10 @@ def load_problem():
         Xs.append(X)
         ys.append(y)
         ps.append(p)
+
+    pdb.set_trace()
+    print(np.shape(Xs))
+    print(ys)
 
     return Xs, ys, ps
 
