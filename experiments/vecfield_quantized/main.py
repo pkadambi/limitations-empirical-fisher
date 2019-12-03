@@ -51,8 +51,8 @@ def load_problem(Quantizer):
     np.random.seed(0)
     N = 1000
     X, y = eftk.toydata.gradient_field_problem(N)
-    # import pdb
-    # pdb.set_trace()
+    import pdb
+    pdb.set_trace()
     problem = eftk.problem_defs.LinearRegression(X, y)
     problem.thetaStar, _ = eftk.solvers.cg(problem)
 
@@ -87,11 +87,11 @@ def load_problem(Quantizer):
 
     def vectorFunctions(gammas, problem):
         return [
-            lambda t: - gammas[0] * np.reshape( (problem.g(q.quantize(t)) + .1 * (t - q.quantize(t)).T),-1),
+            lambda t: - gammas[0] * np.reshape( (problem.g(q.quantize(t)) + .2 * (t - q.quantize(t)).T),-1),
 
-            lambda t: - gammas[1] * np.reshape( problem.g(q.quantize(t)) + .1 * problem.hess(q.quantize(t)).dot(t - q.quantize(t)), -1),
+            lambda t: - gammas[1] * np.reshape( problem.g(q.quantize(t)) + .2 * problem.hess(q.quantize(t)).dot(t - q.quantize(t)), -1),
 
-            lambda t: - gammas[2] * np.reshape( problem.g(q.quantize(t)) + .5 * problem.ef(q.quantize(t)).dot(t - q.quantize(t)), -1),
+            lambda t: - gammas[2] * np.reshape( problem.g(q.quantize(t)) + .2 * problem.ef(q.quantize(t)).dot(t - q.quantize(t)), -1),
         ]
 
     startingPoints = [

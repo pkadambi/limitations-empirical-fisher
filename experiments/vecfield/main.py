@@ -39,12 +39,10 @@ def load_problem():
             lambda t: - gammas[0] * problem.g(t),
 
             #NGD update rule
-            lambda t: - gammas[1] * np.linalg.solve(problem.hess(t) + (1e-8) * np.eye(2),
-                                                    problem.g(t)),
+            lambda t: - gammas[1] * np.linalg.solve(problem.hess(t) + (1e-8) * np.eye(2), problem.g(t)),
 
             #EF update rule
-            lambda t: - gammas[2] * np.linalg.solve(problem.ef(t) + (1e-8) * np.eye(2),
-                                                    problem.g(t)),
+            lambda t: - gammas[2] * np.linalg.solve(problem.ef(t) + (1e-8) * np.eye(2), problem.g(t)),
         ]
 
     #The four starting points in the
