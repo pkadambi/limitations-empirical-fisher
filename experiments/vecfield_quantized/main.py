@@ -56,6 +56,8 @@ def load_problem(Quantizer):
     problem = eftk.problem_defs.LinearRegression(X, y)
     problem.thetaStar, _ = eftk.solvers.cg(problem)
 
+    print(problem.thetaStar)
+    exit()
 
 
 

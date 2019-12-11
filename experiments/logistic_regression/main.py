@@ -55,7 +55,8 @@ def load_problem(Quantizer):
     pdb.set_trace()
     problem = eftk.problem_defs.LogisticRegression(X, y)
     problem.thetaStar, _ = eftk.solvers.lbfgs(problem)
-
+    print(problem.thetaStar)
+    exit()
     # import pdb
     # pdb.set_trace()
 
