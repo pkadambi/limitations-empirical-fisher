@@ -23,10 +23,11 @@ def run(vectorFuncs, startingPoints, quantizer=None):
             # print(vecFunc(xs[t - 1]))
             xs[t] = (xs[t - 1] + STEP_SIZE * vecFunc(xs[t - 1])).reshape((-1,))
 
+            # if t%1000==0:
+            #     print('Iteration: \t'+str(t)+ '\tTheta_t: \t'+str(xs[t]))
         if quantizer is not None:
             print('End Point:' + str(quantizer.quantize(xs[N_ITER-1])) + '\n' + '\tEnd Point FP:' + str(xs[N_ITER-1]) + '\n')
-
-        print()
+        # exit()
 
         return xs
 

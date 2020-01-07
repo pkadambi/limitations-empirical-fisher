@@ -84,8 +84,15 @@ def plot_vecFields(axes, problem, vecFuncs, with_loss_contour=True):
             for j, t2 in enumerate(thetas[1]):
                 theta = np.array([t1, t2]).reshape(-1, 1)
                 v = vecFunc(theta)
+                # pdb.set_trace()
+                # exit()
+                # print(v)
+                # print(np.shape(vector_field))
+                # exit()
                 for d in range(2):
                     vector_field[d][i, j] = v[d]
+        # print(vector_field)
+        # exit()
         return vector_field
 
     def plot_vecField(ax, vecField, scale=30):
@@ -146,9 +153,9 @@ def plot(X, y, problem, vecFuncs, startingPoints, results, Quantizer):
         ax.set_xticks(q.bins)
         ax.set_yticks(q.bins)
 
-        empty_string_labels = [''] * len(q.bins)
-        ax.set_xticklabels(empty_string_labels)
-        ax.set_yticklabels(empty_string_labels)
+        # empty_string_labels = [''] * len(q.bins)
+        # ax.set_xticklabels(empty_string_labels)
+        # ax.set_yticklabels(empty_string_labels)
 
         # y_axis = ax.get_yaxis()
 

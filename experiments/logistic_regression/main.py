@@ -52,11 +52,11 @@ def load_problem(Quantizer):
     N = 1000
 
     X, y = eftk.toydata.wellspecified_logreg(N)
-    pdb.set_trace()
+    # pdb.set_trace()
     problem = eftk.problem_defs.LogisticRegression(X, y)
     problem.thetaStar, _ = eftk.solvers.lbfgs(problem)
-    print(problem.thetaStar)
-    exit()
+    # print(problem.thetaStar)
+    # exit()
     # import pdb
     # pdb.set_trace()
 
@@ -71,37 +71,49 @@ def load_problem(Quantizer):
     # gammas = [1 / 3, 2 / 3, 1]
 
 
-    # gammas = [2, 1 / 8, 4]
+    gammas = [2, 1 / 8, 4]
+
+    def vectorFunctions(gammas, problem):
+        return [
+            # Hessian test (NGD)
+            # lambda t: print(str(problem.loss_data(t))+'\n'+str(t)+'\n'+str(problem.hess(t)) + '\n' + str(problem.grads(t)) + '\n' + str(
+            #     gammas[1] * np.linalg.solve(problem.hess(t) + (1e-8) * np.eye(2),
+            #                                 problem.g(t)))+'\n'+str(problem.hess_prior())+'\n'+str(problem.hess_data(t))),
+
+            # Hessian test (EF)
+            # lambda t: print('Loss\n'+str(problem.loss_data(t))
+            #                 +'\nTheta\n'+str(t)
+            #                 +'\nEF\n'+str(problem.ef(t))
+            #                 +'\nGradient\n' + str(np.sum(problem.grads(t), axis=0))
+            #                 +'\nEF Update\n' + str(gammas[1] * np.linalg.solve(problem.hess(t) + (1e-8) * np.eye(2), problem.g(t)))),
+
+            # GD update rule
+            lambda t: - gammas[0] * problem.g(t),
+
+            # # NGD update rule
+            lambda t: - gammas[1] * np.linalg.solve(problem.hess(t) + (1e-8) * np.eye(2),
+                                                    problem.g(t)),
+
+            # EF update rule
+            lambda t: - gammas[2] * np.linalg.solve(problem.ef(t) + (1e-8) * np.eye(2),
+                                                    problem.g(t)),
+        ]
+
+    # gammas = [2, 1 / 12, 4]
     #
     # def vectorFunctions(gammas, problem):
     #     return [
     #         # GD update rule
-    #         lambda t: - gammas[0] * problem.g(t),
+    #         lambda t: - gammas[0] * problem.g(q.quantize(t)),
     #
     #         # NGD update rule
-    #         lambda t: - gammas[1] * np.linalg.solve(problem.hess(t) + (1e-8) * np.eye(2),
-    #                                                 problem.g(t)),
+    #         lambda t: - gammas[1] * np.linalg.solve(problem.hess(q.quantize(t)) + (1e-8) * np.eye(2),
+    #                                                 problem.g(q.quantize(t))),
     #
     #         # EF update rule
-    #         lambda t: - gammas[2] * np.linalg.solve(problem.ef(t) + (1e-8) * np.eye(2),
-    #                                                 problem.g(t)),
+    #         lambda t: - gammas[2] * np.linalg.solve(problem.ef(q.quantize(t)) + (1e-8) * np.eye(2),
+    #                                                 problem.g(q.quantize(t))),
     #     ]
-
-    gammas = [2, 1 / 12, 4]
-
-    def vectorFunctions(gammas, problem):
-        return [
-            # GD update rule
-            lambda t: - gammas[0] * problem.g(q.quantize(t)),
-
-            # NGD update rule
-            lambda t: - gammas[1] * np.linalg.solve(problem.hess(q.quantize(t)) + (1e-8) * np.eye(2),
-                                                    problem.g(q.quantize(t))),
-
-            # EF update rule
-            lambda t: - gammas[2] * np.linalg.solve(problem.ef(q.quantize(t)) + (1e-8) * np.eye(2),
-                                                    problem.g(q.quantize(t))),
-        ]
 
     # gammas = [2, 1 / 10, 4]
     #

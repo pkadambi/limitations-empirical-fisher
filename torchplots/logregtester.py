@@ -8,11 +8,24 @@ import torch.autograd as autograd
 from torch.autograd import grad
 from numpy import inf
 from logistic_model import LogisticModel
+from quantizer import TorchQuantizer
 import pdb
 
-GRID_DENS = 15
-LEVELS = 5
-LABELPAD_DIFF = -20
+import sys
+
+
+def plot_gradientDescent(ax, xs):
+    # ax.plot(xs[:, 0], xs[:, 1], linestyle='-', color=efplt.colors[optName], linewidth=4, alpha=0.9)
+    ax.plot(xs[:, 0], xs[:, 1], linestyle='-', color='k', linewidth=4, alpha=0.9)
+    # ax.plot(xs[:, 0], xs[:, 1], linestyle='-', color='k', linewidth=4, alpha=0.9)
+    # ax.plot(xs[:, 0], xs[:, 1], linestyle='-', color='k', linewidth=4, alpha=0.9)
+    ax.plot(xs[0, 0], xs[0, 1], 'h', color="k", markersize=8)
+    ax.plot(xs[-1, 0], xs[-1, 1], '*', color="k", markersize=12)
+
+# GRID_DENS = 20
+GRID_DENS = 50
+LEVELS = 40
+LABELPAD_DIFF = 5
 
 optNames = ["GD", "NGD", "EF"]
 # label_for = [
@@ -31,13 +44,11 @@ label_for = [
 ]
 
 
-DD = 3
+# DD = 3
+DD = 25
 theta_lims = [-.5 - DD, -.5 + DD]
 thetas = list([np.linspace(theta_lims[0], theta_lims[1], GRID_DENS) for _ in range(2)])
 
-# print(thetas)
-# print(theta_lims)
-# exit()
 
 class Quantizer:
 
@@ -151,19 +162,19 @@ yhat = sfmx(z)
 # Loss
 loss = binary_cross_entropy(yhat, y)
 # loss = criterion(yhat, y)
-print(yhat)
-print(y)
-print(loss)
+# print(yhat)
+# print(y)
+# print(loss)
 # exit()
-print('\nGRADIENTS')
+# print('\nGRADIENTS')
 loss.backward(retain_graph=True)
-print(theta.grad)
-print(b.grad)
+# print(theta.grad)
+# print(b.grad)
 
 
-print('\nHESSIANS')
-print(jacobian(loss, theta_vec))
-print(hessian(loss, theta_vec))
+# print('\nHESSIANS')
+# print(jacobian(loss, theta_vec))
+# print(hessian(loss, theta_vec))
 
 for i in range(10000):
     val = i/1000
@@ -180,7 +191,7 @@ for i in range(10000):
     break
 # exit()
 
-def plot_loss_contour(ax, problem):
+def plot_loss_contour(ax, problem, losstype='CE', TEMP=4):
 
     def compute_losses(lossFunc):
 
@@ -197,7 +208,13 @@ def plot_loss_contour(ax, problem):
                 # exit()
         return losses
 
-    losses = compute_losses(lambda t: problem.loss_value(t))
+    if losstype is 'CE':
+        losses = compute_losses(lambda t: problem.ce_loss_value(t))
+
+    elif losstype is 'DISTIL':
+
+        losses = compute_losses(lambda t: problem.distillation_loss_value(t, T=TEMP))
+
     # print(thetas[0])
     # print(thetas[1])
     losses = np.array(losses)
@@ -210,9 +227,9 @@ def plot_loss_contour(ax, problem):
     # exit()
     ax.contour(thetas[0], thetas[1], losses.T, LEVELS, colors=["k"], alpha=0.3)
 
-def plot_vecFields(axis, problem):
+def plot_vecFields(axis, problem, optimization_method = 'NGD', TEMP=4):
 
-    def vectorField(problem, optimization_method = 'NGD'):
+    def vectorField(problem, optimization_method = 'NGD', TEMP=4):
         '''
         :param problem: an instance of the problem
         :param optimization_method: Either 'GD', 'NGD', 'EF', or 'DISTIL'
@@ -220,27 +237,21 @@ def plot_vecFields(axis, problem):
         '''
         vector_field = [np.zeros((GRID_DENS, GRID_DENS)), np.zeros((GRID_DENS, GRID_DENS))]
 
-        if optimization_method is 'GD':
-            gradFunc = problem.compute_GD_gradient
-
-        elif optimization_method is 'NGD':
-            gradFunc = problem.compute_NGD_gradient
-
-        elif optimization_method is 'EF':
-            gradFunc = problem.compute_EF_gradient
-
-        elif optimization_method is 'DISTIL':
-            gradFunc = problem.compute_DISTIL_gradient
+        gradFunc = problem.get_grad_func(optimization_method=optimization_method)
 
         for i, t1 in enumerate(thetas[0]):
             for j, t2 in enumerate(thetas[1]):
 
                 theta = np.array([t1, t2]).reshape(-1, 1)
-                v = gradFunc(theta)
+
+                if optimization_method is 'DISTIL':
+                    v = gradFunc(theta, T=TEMP)
+                else:
+                    v = gradFunc(theta)
                 # pdb.set_trace()
 
                 # v[v>2]=2
-
+                # gradFunc(np.array([.5,.5]).reshape(-1,1))
                 v = -np.squeeze(v)
 
                 # print( np.squeeze(v))
@@ -262,10 +273,8 @@ def plot_vecFields(axis, problem):
         cf = ax.quiver(thetas[0], thetas[1], U, V, angles='xy', scale=scale, color=[.6, .6, .6], width=0.0025, headwidth=4, headlength=3)
         return cf
 
-    plot_loss_contour(axis, problem)
-
-    #TODO: uncomment the 2 lines below after you have figured out how to get the loss contours plotted with torch
-    vecField = vectorField(problem)
+    plot_loss_contour(axis, problem, TEMP=TEMP)
+    vecField = vectorField(problem, optimization_method = optimization_method, TEMP=TEMP)
     plot_vecField(axis, vecField)
 
 def fig_and_axes():
@@ -284,31 +293,29 @@ def fig_and_axes():
 
 
 fig, axis = fig_and_axes()
-# print(fig)
-# print(axis)
-# exit()
+
 
 axis.set_xlim(theta_lims)
 axis.set_ylim(theta_lims)
 
-lr_problem = LogisticModel()
-plot_vecFields(axis, lr_problem)
+QUANTIZE = False
 
+fisher_method = 'GD'
 
-axis.set_xlabel('x', labelpad=LABELPAD_DIFF)
-axis.set_ylabel('y', labelpad=LABELPAD_DIFF)
+# q = Quantizer(num_bits=3, q_min=-3, q_max=2.5)
+tq = TorchQuantizer(num_bits=3, q_min=-3, q_max=2.5)
+if QUANTIZE:
+    quantizer = tq
+else:
+    quantizer = None
+# print(tq.bins)
+# exit()
+# if fisher_method in ['GD', 'NGD', '']
 
-axis.set_xlabel(r"$\theta_1$", labelpad=LABELPAD_DIFF)
-axis.set_ylabel(r"$\theta_2$", labelpad=LABELPAD_DIFF)
+lr_problem = LogisticModel(quantizer = quantizer, problem='xor')
+# lr_problem = LogisticModel(quantizer = quantizer)
 
-q = Quantizer(num_bits=3, q_min=-3, q_max=2.5)
-
-axis.set_xticks(q.bins)
-axis.set_yticks(q.bins)
-axis.grid(which='major', alpha=1., linewidth=2, color='k')
-
-plt.show()
-
+TEMPERATURE=1
 
 
 startingPoints = [
@@ -318,5 +325,46 @@ startingPoints = [
     np.array([-3, .5]).reshape((-1, 1)),
 ]
 
+# sequences = [np.hstack(lr_problem.train(n_iters=20000, update_method=fisher_method, starting_point=s)).T for s in startingPoints]
+# [plot_gradientDescent(axis, seq) for seq in sequences]
+# lr_problem.train(update_method='GD', starting_point=np.array([-1.5, -1.5]))
+# lr_problem.train(update_method='GD')
 
+plot_vecFields(axis, lr_problem, optimization_method=fisher_method, TEMP=TEMPERATURE)
+
+
+axis.set_xlabel('x', labelpad=LABELPAD_DIFF)
+axis.set_ylabel('y', labelpad=LABELPAD_DIFF)
+
+axis.set_xlabel(r"$\theta_1$", labelpad=LABELPAD_DIFF)
+axis.set_ylabel(r"$\theta_2$", labelpad=LABELPAD_DIFF)
+
+if QUANTIZE:
+    axis.set_xticks(quantizer.bins)
+    axis.set_yticks(quantizer.bins)
+
+axis.grid(which='major', alpha=1., linewidth=2, color='k')
+
+title_string = ""
+
+if fisher_method=='GD':
+    title_string = r"GD - $F(\theta)$ not used"
+
+elif fisher_method=='NGD':
+    title_string = r"NGD - $F(\theta) = \sum_n \nabla^2 log(y_n|x_n)$ "
+
+elif fisher_method=='GSQ':
+    title_string = r"$Grad Squared \n F(\theta) = \sum_n \nabla log(y_n|x_n) \sum_n \nabla log(y_n|x_n)$"
+
+elif fisher_method=='EF':
+    title_string = r"$EF - F(\theta) = \sum_n \nabla log(y_n|x_n) \nabla log(y_n|x_n)^T$"
+
+elif fisher_method=='DISTIL':
+    title_string = r"Distillation"
+
+
+plt.title(r"FP32 Logistic Regression, SGD, $F$ Not Used")
+
+
+plt.show()
 
