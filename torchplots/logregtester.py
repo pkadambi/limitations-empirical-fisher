@@ -16,14 +16,14 @@ import sys
 
 def plot_gradientDescent(ax, xs):
     # ax.plot(xs[:, 0], xs[:, 1], linestyle='-', color=efplt.colors[optName], linewidth=4, alpha=0.9)
-    ax.plot(xs[:, 0], xs[:, 1], linestyle='-', color='k', linewidth=4, alpha=0.9)
+    ax.plot(xs[:, 0], xs[:, 1], linestyle='-', color='k', linewidth=2, alpha=0.9)
     # ax.plot(xs[:, 0], xs[:, 1], linestyle='-', color='k', linewidth=4, alpha=0.9)
     # ax.plot(xs[:, 0], xs[:, 1], linestyle='-', color='k', linewidth=4, alpha=0.9)
     ax.plot(xs[0, 0], xs[0, 1], 'h', color="k", markersize=8)
     ax.plot(xs[-1, 0], xs[-1, 1], '*', color="k", markersize=12)
 
-# GRID_DENS = 20
-GRID_DENS = 50
+# GRID_DENS = 10
+GRID_DENS = 20
 LEVELS = 40
 LABELPAD_DIFF = 5
 
@@ -44,8 +44,8 @@ label_for = [
 ]
 
 
-# DD = 3
-DD = 25
+DD = 3.5
+# DD = 10
 theta_lims = [-.5 - DD, -.5 + DD]
 thetas = list([np.linspace(theta_lims[0], theta_lims[1], GRID_DENS) for _ in range(2)])
 
@@ -225,7 +225,8 @@ def plot_loss_contour(ax, problem, losstype='CE', TEMP=4):
     # print(losses)
     # print(LEVELS)
     # exit()
-    ax.contour(thetas[0], thetas[1], losses.T, LEVELS, colors=["k"], alpha=0.3)
+    CS = ax.contour(thetas[0], thetas[1], losses.T, LEVELS, alpha=0.3, linewidths=2.)
+    ax.clabel(CS, inline=1, fontsize=10)
 
 def plot_vecFields(axis, problem, optimization_method = 'NGD', TEMP=4):
 
@@ -300,7 +301,7 @@ axis.set_ylim(theta_lims)
 
 QUANTIZE = False
 
-fisher_method = 'GD'
+fisher_method = 'NGD'
 
 # q = Quantizer(num_bits=3, q_min=-3, q_max=2.5)
 tq = TorchQuantizer(num_bits=3, q_min=-3, q_max=2.5)
@@ -315,7 +316,7 @@ else:
 lr_problem = LogisticModel(quantizer = quantizer, problem='xor')
 # lr_problem = LogisticModel(quantizer = quantizer)
 
-TEMPERATURE=1
+TEMPERATURE=4
 
 
 startingPoints = [
@@ -325,8 +326,8 @@ startingPoints = [
     np.array([-3, .5]).reshape((-1, 1)),
 ]
 
-# sequences = [np.hstack(lr_problem.train(n_iters=20000, update_method=fisher_method, starting_point=s)).T for s in startingPoints]
-# [plot_gradientDescent(axis, seq) for seq in sequences]
+sequences = [np.hstack(lr_problem.train(n_iters=30000, update_method=fisher_method, starting_point=s)).T for s in startingPoints]
+[plot_gradientDescent(axis, seq) for seq in sequences]
 # lr_problem.train(update_method='GD', starting_point=np.array([-1.5, -1.5]))
 # lr_problem.train(update_method='GD')
 
@@ -343,7 +344,9 @@ if QUANTIZE:
     axis.set_xticks(quantizer.bins)
     axis.set_yticks(quantizer.bins)
 
-axis.grid(which='major', alpha=1., linewidth=2, color='k')
+    axis.grid(which='major', alpha=1., linewidth=2, color='k')
+else:
+    axis.grid(True)
 
 title_string = ""
 
@@ -351,19 +354,26 @@ if fisher_method=='GD':
     title_string = r"GD - $F(\theta)$ not used"
 
 elif fisher_method=='NGD':
-    title_string = r"NGD - $F(\theta) = \sum_n \nabla^2 log(y_n|x_n)$ "
+    title_string = r"NGD - $F(\theta) = \sum_n \nabla^2 log(y_n|x_n)$"
+    title_string += '\n' + r"$F=\mathbb{E}[\mathrm{J}^T \frac{1}{\sigma (x)(1-\sigma(x))} \mathrm{J}]$ "
 
 elif fisher_method=='GSQ':
-    title_string = r"$Grad Squared \n F(\theta) = \sum_n \nabla log(y_n|x_n) \sum_n \nabla log(y_n|x_n)$"
+    title_string = r"$Grad Squared F(\theta) = \sum_n \nabla log(y_n|x_n) \sum_n \nabla log(y_n|x_n)$"
+    title_string += '\n' + r'$F=\mathbb{E}[\mathrm{J}]^T \mathbb{E}[ \mathrm{J}]$'
 
 elif fisher_method=='EF':
     title_string = r"$EF - F(\theta) = \sum_n \nabla log(y_n|x_n) \nabla log(y_n|x_n)^T$"
+    title_string = '\n' + r"$F = \mathbb{E}[\mathrm{J}^T \mathrm{J}]$"
 
 elif fisher_method=='DISTIL':
-    title_string = r"Distillation"
+    title_string = '\n' + r"Distillation w/GD, $F$ Not Used"
 
+if QUANTIZE:
+    title_string = 'Quantized, ' + title_string
+else:
+    title_string = 'FP32, ' + title_string
 
-plt.title(r"FP32 Logistic Regression, SGD, $F$ Not Used")
+plt.title("2-layer Ntwk, Xor Data, \n"+title_string)
 
 
 plt.show()

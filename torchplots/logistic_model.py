@@ -3,6 +3,7 @@ import torch.nn as nn
 import tensorflow as tf
 import numpy as np
 import scipy as sp
+from scipy import special
 import torch.nn.functional as F
 import pdb
 
@@ -33,7 +34,7 @@ def clip(p, threshold=10**-8):
 
 
 def sigmoid(x):
-    return clip(sp.special.expit(x))
+    return clip(special.expit(x))
 
 def jacobian(y, x, create_graph=False):
     jac = []
@@ -215,6 +216,9 @@ class LogisticModel:
         z = z1 @ self.theta_fwd
         # z = self.X @ self.theta_fwd
         yhat = torch.sigmoid(z)
+        print(yhat.size())
+        exit()
+
         # print(yhat)
         return yhat
 
@@ -315,7 +319,7 @@ class LogisticModel:
         return self.theta.grad.data.numpy()
 
 
-    def compute_NGD_gradient(self, theta, retain_original_theta=False, gamma=1 / 8, diag_load=1e-5):
+    def compute_NGD_gradient(self, theta, retain_original_theta=False, gamma=1 / 8, diag_load=1e-3):
 
         self.zero_gradients()
 
@@ -395,7 +399,7 @@ class LogisticModel:
 
         return ngd_update
 
-    def compute_EF_gradient(self, theta,  retain_original_theta=False, gamma=4):
+    def compute_EF_gradient(self, theta,  retain_original_theta=False, gamma=4, diag_load=1e-5):
 
         if retain_original_theta:
             theta_orig = self.theta.clone()
@@ -410,7 +414,7 @@ class LogisticModel:
         hess = self.ef(theta)
 
 
-        ngd_update = gamma * np.linalg.solve(hess + np.eye(2) * (1e-8), g)
+        ngd_update = gamma * np.linalg.solve(hess + np.eye(2) * diag_load, g)
         # ngd_update
 
         if retain_original_theta:
